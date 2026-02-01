@@ -1,3 +1,6 @@
+print("🔥 LOADED scam_detector.py FROM:", __file__)
+
+
 class ScamBehaviorState:
     """
     Tracks adversarial scammer behavior across a session.
@@ -14,6 +17,8 @@ class ScamBehaviorState:
         self.phase_history.append(phase)
         self.risk_score += points
         self.behavioral_signals.add(signal)
+
+
 SCAM_PHASES = [
     "INITIAL_CONTACT",
     "URGENCY_PRESSURE",
@@ -22,20 +27,26 @@ SCAM_PHASES = [
     "ISOLATION_TACTIC",
     "PAYMENT_EXTRACTION"
 ]
+
 INTENT_SIGNALS = {
     "THREAT": ["blocked", "suspended", "legal action", "freeze"],
-    "REWARD": ["prize", "won", "cashback"],
+    "REWARD": ["prize", "won", "cashback", "jackpot", "lottery"],
     "AUTHORITY": ["bank", "upi", "customer care", "support", "govt"],
     "ACTION": ["click", "verify", "share", "send"],
     "SENSITIVE": ["otp", "pin", "password", "upi id"],
     "ISOLATION": ["do not tell", "confidential", "keep secret"],
     "PAYMENT": ["pay", "transfer", "send money", "upi"]
 }
+
+
 def resolve_behavior_phase(text: str, behavior: ScamBehaviorState):
     text = text.lower()
 
     if any(x in text for x in INTENT_SIGNALS["THREAT"]):
         behavior.advance("URGENCY_PRESSURE", 2, "Threat pressure")
+
+    if any(x in text for x in INTENT_SIGNALS["REWARD"]):
+        behavior.advance("ACTION_REQUEST", 2, "Reward baiting")
 
     if any(x in text for x in INTENT_SIGNALS["AUTHORITY"]):
         behavior.advance("AUTHORITY_ASSERTION", 3, "Authority impersonation")
@@ -51,6 +62,8 @@ def resolve_behavior_phase(text: str, behavior: ScamBehaviorState):
 
     if any(x in text for x in INTENT_SIGNALS["SENSITIVE"]):
         behavior.advance("PAYMENT_EXTRACTION", 5, "Sensitive data theft")
+
+
 def follows_scam_trajectory(behavior: ScamBehaviorState):
     required_sequence = [
         "URGENCY_PRESSURE",
@@ -58,8 +71,39 @@ def follows_scam_trajectory(behavior: ScamBehaviorState):
         "ACTION_REQUEST",
         "PAYMENT_EXTRACTION"
     ]
-
     return all(phase in behavior.phase_history for phase in required_sequence)
+
+
+# 🔥 FINAL Narrative Detection (Priority-Based)
+def detect_scam_narrative(text: str):
+    text = text.lower()
+
+    # High-risk credential theft
+    if any(x in text for x in INTENT_SIGNALS["SENSITIVE"]):
+        return "credential_theft"
+
+    # Payment extraction
+    if any(x in text for x in INTENT_SIGNALS["PAYMENT"]):
+        return "payment"
+
+    # Isolation tactics
+    if any(x in text for x in INTENT_SIGNALS["ISOLATION"]):
+        return "isolation"
+
+    # Authority impersonation
+    if any(x in text for x in INTENT_SIGNALS["AUTHORITY"]):
+        return "authority"
+
+    # Reward baiting
+    if any(x in text for x in INTENT_SIGNALS["REWARD"]):
+        return "reward"
+
+    # Threat language
+    if any(x in text for x in INTENT_SIGNALS["THREAT"]):
+        return "threat"
+
+    return "unknown"
+
 
 def detect_scam_ultra(message: str, behavior: ScamBehaviorState):
     resolve_behavior_phase(message, behavior)
@@ -70,15 +114,22 @@ def detect_scam_ultra(message: str, behavior: ScamBehaviorState):
         follows_scam_trajectory(behavior)
     )
 
-    # 🔥 NEW: Combined psychological manipulation trigger
+    # Psychological manipulation trigger
     isolation_present = "ISOLATION_TACTIC" in behavior.phase_history
     manipulation_present = any(
         phase in behavior.phase_history
-        for phase in ["URGENCY_PRESSURE", "AUTHORITY_ASSERTION", "ACTION_REQUEST"]
+        for phase in [
+            "URGENCY_PRESSURE",
+            "AUTHORITY_ASSERTION",
+            "ACTION_REQUEST"
+        ]
     )
 
     if isolation_present and manipulation_present:
         scam_detected = True
+
+    narrative = detect_scam_narrative(message)
+    print("DEBUG NARRATIVE:", narrative)
 
     return {
         "scamDetected": scam_detected,
@@ -86,5 +137,6 @@ def detect_scam_ultra(message: str, behavior: ScamBehaviorState):
         "currentPhase": behavior.current_phase,
         "phaseHistory": behavior.phase_history,
         "confidence": min(behavior.risk_score / 12, 0.98),
-        "behavioralSignals": list(behavior.behavioral_signals)
+        "behavioralSignals": list(behavior.behavioral_signals),
+        "narrative": narrative
     }
