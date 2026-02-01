@@ -51,3 +51,8 @@ def analyze_message(payload: IncomingMessage, x_api_key: str = Header(None)):
         "status": "success",
         "reply": reply_text,
     }
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("app.main:app", host="0.0.0.0", port=8000)
+
