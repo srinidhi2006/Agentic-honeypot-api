@@ -4,6 +4,7 @@ from app.auth import verify_api_key
 from app.session import get_session
 from app.scam_detector import detect_scam_ultra
 from app.agent import generate_agent_reply
+from fastapi import Depends
 
 from app.intelligence import Intelligence
 from app.finalizer import should_finalize
@@ -15,8 +16,7 @@ app = FastAPI(title="Agentic Honeypot API")
 
 @app.post("/analyze")
 
-def analyze_message(payload: IncomingMessage, x_api_key: str = Header(None)):
-    verify_api_key(x_api_key)
+def analyze_message(payload: IncomingMessage, _: None = Depends(verify_api_key)):
 
     session = get_session(payload.sessionId)
     session["turns"] += 1
@@ -52,7 +52,5 @@ def analyze_message(payload: IncomingMessage, x_api_key: str = Header(None)):
         "reply": reply_text,
     }
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run("app.main:app", host="0.0.0.0", port=8000)
+
 
