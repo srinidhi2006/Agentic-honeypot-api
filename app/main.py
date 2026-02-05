@@ -54,5 +54,28 @@ def analyze_message(payload: IncomingMessage, _: None = Depends(verify_api_key))
 @app.get("/health")
 def health():
     return {"status": "alive"}
+@app.post("/")
+async def tester_adapter(payload: dict, x_api_key: str = Header(None)):
+
+    verify_api_key(x_api_key)
+
+    # Convert platform simple payload → real format
+    adapted = {
+        "sessionId": "platform-test",
+        "message": {
+            "sender": "scammer",
+            "text": str(payload.get("message", "test")),
+            "timestamp": "2026-01-01T00:00:00Z"
+        },
+        "conversationHistory": [],
+        "metadata": {
+            "channel": "TEST",
+            "language": "English",
+            "locale": "IN"
+        }
+    }
+
+    # Call your REAL logic
+    return analyze_message(IncomingMessage(**adapted))
 
 
