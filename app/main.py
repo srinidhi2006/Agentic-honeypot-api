@@ -51,6 +51,8 @@ def analyze_message(payload: IncomingMessage, _: None = Depends(verify_api_key))
         "status": "success",
         "reply": reply_text,
     }
-
+@app.get("/health")
+def health():
+    return {"status": "alive"}
 
 
